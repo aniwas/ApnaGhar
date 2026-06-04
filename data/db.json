@@ -1,0 +1,455 @@
+{
+  "properties": [
+    {
+      "id": "prop-1",
+      "title": "The Sky Garden Penthouse",
+      "description": "Breathtaking 4 BHK luxury penthouse at Worli Seaface with a private terrace pool, Italian marble flooring, high ceilings, custom walk-in closets, and panoramic Arabian Sea views. Fully integrated with automated home technology. Includes state-of-the-art kitchen equipment and high-end air purification system.",
+      "category": "RESIDENTIAL",
+      "type": "Penthouse",
+      "purpose": "SELL",
+      "price": 125000000,
+      "maintenanceCharges": 15000,
+      "location": {
+        "country": "India",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "area": "Worli",
+        "address": "Worli Seaface Road, Near Mahalaxmi Temple",
+        "postalCode": "400018",
+        "latitude": 18.9986,
+        "longitude": 72.8152
+      },
+      "details": {
+        "bedrooms": 4,
+        "bathrooms": 5,
+        "balconies": 3,
+        "floors": 2,
+        "area": 4800,
+        "furnishingStatus": "FULLY_FURNISHED"
+      },
+      "amenities": {
+        "parking": true,
+        "lift": true,
+        "swimmingPool": true,
+        "gym": true,
+        "garden": true,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": true
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200",
+        "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&q=80&w=800"
+      ],
+      "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4",
+      "virtualTourUrl": "https://my.matterport.com/show/?m=example",
+      "floorPlanUrl": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&q=80&w=800",
+      "ownerId": "owner-1",
+      "ownerName": "Vikram Aditya Singhal",
+      "ownerType": "OWNER",
+      "status": "APPROVED",
+      "views": 452,
+      "leadsCount": 39,
+      "featured": true,
+      "createdAt": "2026-05-15T12:00:00Z",
+      "updatedAt": "2026-06-03T07:40:54.348Z"
+    },
+    {
+      "id": "prop-2",
+      "title": "Elegance Boulevard Flat",
+      "description": "Modern and sun-drenched 3 BHK apartment situated in Noida Sector 62. Proximity to major IT Parks and Metro Station is ideal for professionals. Offers a spacious kitchen, private balcony overlooking the internal central park, secure designated basement parking, and complete split unit ACs.",
+      "category": "RESIDENTIAL",
+      "type": "Apartment",
+      "purpose": "RENT",
+      "price": 45000,
+      "securityDeposit": 135000,
+      "maintenanceCharges": 3500,
+      "location": {
+        "country": "India",
+        "state": "Uttar Pradesh",
+        "city": "Noida",
+        "area": "Sector 62",
+        "address": "Tower C, Elegance Heights, Sector 62",
+        "postalCode": "201301",
+        "latitude": 28.6213,
+        "longitude": 77.3622
+      },
+      "details": {
+        "bedrooms": 3,
+        "bathrooms": 3,
+        "balconies": 2,
+        "floors": 1,
+        "area": 1650,
+        "furnishingStatus": "SEMI_FURNISHED"
+      },
+      "amenities": {
+        "parking": true,
+        "lift": true,
+        "swimmingPool": true,
+        "gym": true,
+        "garden": true,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": true
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1200",
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800"
+      ],
+      "ownerId": "owner-2",
+      "ownerName": "Nisha Sharma",
+      "ownerType": "OWNER",
+      "status": "APPROVED",
+      "views": 289,
+      "leadsCount": 14,
+      "featured": false,
+      "createdAt": "2026-05-20T14:30:00Z",
+      "updatedAt": "2026-06-03T07:40:57.948Z"
+    },
+    {
+      "id": "prop-3",
+      "title": "The Meadows Luxury Villa",
+      "description": "Ultra-luxurious 4 BHK independent villa in Bangalore Whitefield, located in a pristine gated community with 24/7 security. Features a private landscaped backyard, European open-plan modern modular kitchen, separate servant quarters, home theatre room, and solar energy installations.",
+      "category": "RESIDENTIAL",
+      "type": "Villa",
+      "purpose": "SELL",
+      "price": 52000000,
+      "maintenanceCharges": 8000,
+      "location": {
+        "country": "India",
+        "state": "Karnataka",
+        "city": "Bangalore",
+        "area": "Whitefield",
+        "address": "Lane 4, The Meadows Enclave, Whitefield",
+        "postalCode": "560066",
+        "latitude": 12.9698,
+        "longitude": 77.7499
+      },
+      "details": {
+        "bedrooms": 4,
+        "bathrooms": 4,
+        "balconies": 2,
+        "floors": 2,
+        "area": 3800,
+        "furnishingStatus": "FULLY_FURNISHED"
+      },
+      "amenities": {
+        "parking": true,
+        "lift": false,
+        "swimmingPool": true,
+        "gym": true,
+        "garden": true,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": true
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&q=80&w=1200",
+        "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1613977257592-4871e5fbe7c5?auto=format&fit=crop&q=80&w=800"
+      ],
+      "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4",
+      "ownerId": "agent-1",
+      "ownerName": "Rajesh Malhotra (Malhotra Estates)",
+      "ownerType": "AGENT",
+      "status": "APPROVED",
+      "views": 612,
+      "leadsCount": 54,
+      "featured": true,
+      "createdAt": "2026-05-10T10:00:00Z",
+      "updatedAt": "2026-06-03T07:33:44.254Z"
+    },
+    {
+      "id": "prop-4",
+      "title": "CyberHub Premier Corporate Suite",
+      "description": "Premium plug-and-play corporate office space in DLF Cyber City, Gurgaon. Located on a high floor of a grade-A building with continuous high-speed elevators, conference room setup, wet pantry, and reception desks. It can easily accommodate 45+ workstations with an elegant glass layout.",
+      "category": "COMMERCIAL",
+      "type": "Office",
+      "purpose": "LEASE",
+      "price": 350000,
+      "securityDeposit": 1050000,
+      "maintenanceCharges": 25000,
+      "location": {
+        "country": "India",
+        "state": "Haryana",
+        "city": "Gurgaon",
+        "area": "DLF Cyber City",
+        "address": "Tower A, CyberHub Tech Space, Phase 3",
+        "postalCode": "122002",
+        "latitude": 28.4951,
+        "longitude": 77.0894
+      },
+      "details": {
+        "bedrooms": 0,
+        "bathrooms": 3,
+        "balconies": 0,
+        "floors": 1,
+        "area": 3200,
+        "furnishingStatus": "FULLY_FURNISHED"
+      },
+      "amenities": {
+        "parking": true,
+        "lift": true,
+        "swimmingPool": false,
+        "gym": false,
+        "garden": false,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": true
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200",
+        "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=800"
+      ],
+      "ownerId": "agent-1",
+      "ownerName": "Rajesh Malhotra (Malhotra Estates)",
+      "ownerType": "AGENT",
+      "status": "APPROVED",
+      "views": 180,
+      "leadsCount": 12,
+      "featured": true,
+      "createdAt": "2026-05-25T16:00:00Z",
+      "updatedAt": "2026-05-26T09:00:00Z"
+    },
+    {
+      "id": "prop-5",
+      "title": "High-Street Retail Showroom",
+      "description": "Double height high-street commercial retail space on FC Road, Pune. Features maximum street-facing exposure, enormous display windows, standard storage cellar, heavy foot traffic, and immediate parking. Perfect for fashion, luxury goods, or fancy cafes.",
+      "category": "COMMERCIAL",
+      "type": "Shop",
+      "purpose": "RENT",
+      "price": 180000,
+      "securityDeposit": 540000,
+      "maintenanceCharges": 8500,
+      "location": {
+        "country": "India",
+        "state": "Maharashtra",
+        "city": "Pune",
+        "area": "Shivajinagar",
+        "address": "FC Road, Near Deccan Gymkhana",
+        "postalCode": "411004",
+        "latitude": 18.5246,
+        "longitude": 73.8412
+      },
+      "details": {
+        "area": 1450,
+        "furnishingStatus": "UNFURNISHED"
+      },
+      "amenities": {
+        "parking": true,
+        "lift": false,
+        "swimmingPool": false,
+        "gym": false,
+        "garden": false,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": false
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1555529771-835f59fc5efe?auto=format&fit=crop&q=80&w=1200"
+      ],
+      "ownerId": "owner-3",
+      "ownerName": "Devendra Kulkarni",
+      "ownerType": "OWNER",
+      "status": "APPROVED",
+      "views": 122,
+      "leadsCount": 9,
+      "featured": false,
+      "createdAt": "2026-05-28T09:15:00Z",
+      "updatedAt": "2026-06-03T05:00:00Z"
+    },
+    {
+      "id": "prop-6",
+      "title": "Scenic Green Valley Plot",
+      "description": "Fully cleared premium level residential plot ready for construction, nestled in Devanahalli, Bangalore, near the International Airport. Fully approved by local municipal bodies, with active clean water pipelines, electric layout connections, concrete approach roads, and scenic boundary fencing.",
+      "category": "LAND",
+      "type": "Residential Plot",
+      "purpose": "SELL",
+      "price": 7800000,
+      "location": {
+        "country": "India",
+        "state": "Karnataka",
+        "city": "Bangalore",
+        "area": "Devanahalli",
+        "address": "Phase III, Valley View Layout, Devanahalli",
+        "postalCode": "562110",
+        "latitude": 13.2483,
+        "longitude": 77.7135
+      },
+      "details": {
+        "area": 3200
+      },
+      "amenities": {
+        "parking": false,
+        "lift": false,
+        "swimmingPool": false,
+        "gym": false,
+        "garden": true,
+        "security24x7": true,
+        "cctv": false,
+        "powerBackup": false,
+        "internet": false
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1200",
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800"
+      ],
+      "ownerId": "agent-2",
+      "ownerName": "Ananth Gowda (Gowda Realties)",
+      "ownerType": "AGENT",
+      "status": "PENDING",
+      "views": 340,
+      "leadsCount": 22,
+      "featured": false,
+      "createdAt": "2026-05-18T11:00:00Z",
+      "updatedAt": "2026-05-19T08:00:00Z"
+    },
+    {
+      "id": "prop-7",
+      "title": "Modern Logistic Warehouse Space",
+      "description": "Enormous state-of-the-art heavy commercial warehouse with high clear ceilings, heavy-duty epoxy industrial flooring, multi-dock shutter loading access, fully functional office cabins, independent electricity feeder, robust fire protection design, and immediate heavy transport access.",
+      "category": "COMMERCIAL",
+      "type": "Warehouse",
+      "purpose": "LEASE",
+      "price": 150000,
+      "securityDeposit": 600000,
+      "maintenanceCharges": 12000,
+      "location": {
+        "country": "India",
+        "state": "Gujarat",
+        "city": "Ahmedabad",
+        "area": "Sanand",
+        "address": "Plot 4A, Sanand GIDC Phase II",
+        "postalCode": "382110",
+        "latitude": 23.0116,
+        "longitude": 72.3922
+      },
+      "details": {
+        "area": 12000,
+        "floors": 1
+      },
+      "amenities": {
+        "parking": true,
+        "lift": false,
+        "swimmingPool": false,
+        "gym": false,
+        "garden": false,
+        "security24x7": true,
+        "cctv": true,
+        "powerBackup": true,
+        "internet": true
+      },
+      "images": [
+        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1200"
+      ],
+      "ownerId": "agent-1",
+      "ownerName": "Rajesh Malhotra (Malhotra Estates)",
+      "ownerType": "AGENT",
+      "status": "PENDING",
+      "views": 92,
+      "leadsCount": 5,
+      "featured": false,
+      "createdAt": "2026-05-05T08:45:00Z",
+      "updatedAt": "2026-05-05T08:45:00Z"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "book-1780468557738",
+      "propertyId": "prop-1",
+      "propertyTitle": "The Sky Garden Penthouse",
+      "propertyImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200",
+      "clientId": "buyer-demo",
+      "clientName": "Anil Vasudevan",
+      "clientEmail": "aniwas111@gmail.com",
+      "clientPhone": "+91 98765 43210",
+      "ownerId": "owner-1",
+      "date": "2026-06-10",
+      "time": "11:00",
+      "status": "APPROVED",
+      "message": "",
+      "createdAt": "2026-06-03T06:35:57.738Z"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1",
+      "propertyId": "prop-1",
+      "reviewerId": "buyer-demo",
+      "reviewerName": "Anil Vasudevan",
+      "rating": 5,
+      "comment": "Absolutely stunning views. Worth every rupee! The virtual tour of the penthouse was incredibly immersive and matched the actual site perfectly.",
+      "createdAt": "2026-06-01T15:00:00Z"
+    },
+    {
+      "id": "rev-2",
+      "propertyId": "prop-3",
+      "reviewerId": "tenant-demo",
+      "reviewerName": "Karan Mehra",
+      "rating": 4,
+      "comment": "Excellent property situated in a highly clean and peaceful society. Rajesh Malhotra was very helpful in coordinating our visit.",
+      "createdAt": "2026-06-02T10:00:00Z"
+    }
+  ],
+  "conversations": [],
+  "alerts": [
+    {
+      "id": "alert-1780469388869",
+      "email": "aniwas111@gmail.com",
+      "city": "All Cities",
+      "category": "ALL",
+      "createdAt": "2026-06-03T06:49:48.869Z"
+    },
+    {
+      "id": "alert-1780469387579",
+      "email": "aniwas111@gmail.com",
+      "city": "All Cities",
+      "category": "ALL",
+      "createdAt": "2026-06-03T06:49:47.579Z"
+    }
+  ],
+  "notifications": [],
+  "users": [
+    {
+      "id": "aniwas111@gmail.com",
+      "name": "Anil Vasudevan",
+      "email": "aniwas111@gmail.com",
+      "role": "ADMIN",
+      "phone": "+91 98765 43210"
+    },
+    {
+      "id": "rajesh@apnaghar.com",
+      "name": "Rajesh Malhotra",
+      "email": "rajesh@apnaghar.com",
+      "role": "AGENT",
+      "phone": "+91 91234 56789"
+    },
+    {
+      "id": "priya@gmail.com",
+      "name": "Priya Sharma",
+      "email": "priya@gmail.com",
+      "role": "BUYER",
+      "phone": "+91 98123 45678"
+    },
+    {
+      "id": "karan@gmail.com",
+      "name": "Karan Mehra",
+      "email": "karan@gmail.com",
+      "role": "TENANT",
+      "phone": "+91 88888 77777"
+    },
+    {
+      "id": "suresh@gmail.com",
+      "name": "Suresh Kumar",
+      "email": "suresh@gmail.com",
+      "role": "OWNER",
+      "phone": "+91 77777 66666"
+    }
+  ]
+}
