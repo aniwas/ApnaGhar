@@ -92,11 +92,11 @@ export default function AISmartBroker({ onSelectProperty, properties, isOpen, on
       // Fallback: Perform intuitive local regex matchmaking so the user is never left with an empty error!
       const normalizedQuery = userMsg.toLowerCase();
       let matchedProps = properties.filter(p => 
-        normalizedQuery.includes(p.location.city.toLowerCase()) ||
-        normalizedQuery.includes(p.location.area.toLowerCase()) || 
-        normalizedQuery.includes(p.category.toLowerCase()) ||
-        normalizedQuery.includes(p.type.toLowerCase()) ||
-        normalizedQuery.includes(p.title.toLowerCase())
+        (p.location?.city || '').toLowerCase().includes(normalizedQuery) ||
+        (p.location?.area || '').toLowerCase().includes(normalizedQuery) || 
+        (p.category || '').toLowerCase().includes(normalizedQuery) ||
+        (p.type || '').toLowerCase().includes(normalizedQuery) ||
+        (p.title || '').toLowerCase().includes(normalizedQuery)
       );
 
       if (matchedProps.length === 0) {
@@ -112,7 +112,7 @@ export default function AISmartBroker({ onSelectProperty, properties, isOpen, on
 
       const backupRecommendations = matchedProps.slice(0, 2).map(p => ({
         id: p.id,
-        reason: `Matched listing "${p.title}" located in ${p.location.city} with price model matching your keywords.`
+        reason: `Matched listing "${p.title || 'Property'}" located in ${p.location?.city || 'Selected Locality'} with price model matching your keywords.`
       }));
 
       setMessages(prev => {
@@ -197,17 +197,17 @@ export default function AISmartBroker({ onSelectProperty, properties, isOpen, on
                         className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 hover:border-blue-500/40 cursor-pointer transition-all flex gap-3 group"
                       >
                         <img 
-                          src={matchedProp.images[0]} 
-                          alt={matchedProp.title}
+                          src={matchedProp.images?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80'} 
+                          alt={matchedProp.title || 'Property'}
                           className="w-14 h-14 rounded-lg object-cover bg-slate-800 shrink-0"
                           referrerPolicy="no-referrer"
                         />
                         <div className="min-w-0">
                           <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors truncate">
-                            {matchedProp.title}
+                            {matchedProp.title || 'Property'}
                           </h4>
                           <span className="text-[10px] font-mono text-blue-400 block font-semibold">
-                            ₹{(matchedProp.price >= 10000000 ? `${(matchedProp.price/10000000).toFixed(1)} Cr` : `${(matchedProp.price/100000).toFixed(1)} Lakh`)} • {matchedProp.location.city}
+                            ₹{((matchedProp.price || 0) >= 10000000 ? `${((matchedProp.price || 0)/10000000).toFixed(1)} Cr` : `${((matchedProp.price || 0)/100000).toFixed(1)} Lakh`)} • {matchedProp.location?.city || 'No city location specified'}
                           </span>
                           <p className="text-[10px] text-white/60 line-clamp-2 mt-1">
                             {rec.reason}

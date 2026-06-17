@@ -98,6 +98,7 @@ export interface Property {
   status: 'REJECTED' | 'PENDING' | 'APPROVED' | 'SOLD' | 'RENTED';
   moderationNotes?: string;
   auditHistory?: AuditLogEntry[];
+  versions?: PropertyVersion[];
   views: number;
   leadsCount: number;
   sharesCount?: number;
@@ -105,6 +106,16 @@ export interface Property {
   averageRating?: number | null;
   reviewsCount?: number;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface PropertyVersion {
+  id: string; // unique version id
+  title: string;
+  description: string;
+  price: number;
+  status: 'REJECTED' | 'PENDING' | 'APPROVED' | 'SOLD' | 'RENTED';
+  moderationNotes?: string;
   updatedAt: string;
 }
 
@@ -188,3 +199,19 @@ export interface ContactInquiry {
   message: string;
   createdAt: string;
 }
+
+export type PromotionType = 'PROMOTIONAL' | 'FEATURED' | 'OFFER' | 'ADVERTISEMENT';
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  type: PromotionType;
+  imageUrl: string;
+  badge?: string;
+  linkUrl?: string; // Redirect link/filters e.g. "category:RESIDENTIAL" or "city:Mumbai" or "purpose:RENT"
+  expiryDate?: string; // ISO string e.g. "2026-06-30" or empty
+  active: boolean;
+  createdAt: string;
+}
+

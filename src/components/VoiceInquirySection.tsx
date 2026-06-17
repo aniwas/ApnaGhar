@@ -152,6 +152,9 @@ export default function VoiceInquirySection({ property, currentUser, onLeadSubmi
     }
 
     try {
+      if (!navigator.mediaDevices) {
+        throw new Error("navigator.mediaDevices is unsupported or blocked in this browser context.");
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;

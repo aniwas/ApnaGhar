@@ -1,6 +1,6 @@
 {
   "name": "ApnaGhar",
   "description": "A glassmorphism-based, modern, and scalable Real Estate Property Listing Platform to browse, buy, rent, and list properties.",
-  "requestFramePermissions": ["geolocation", "microphone"],
+  "requestFramePermissions": ["geolocation", "microphone", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

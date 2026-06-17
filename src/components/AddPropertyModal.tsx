@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Loader2, Plus, X, Building, DollarSign, MapPin, ListPlus, Trash2, Image as ImageIcon, AlertCircle, CheckCircle, UploadCloud, Info } from 'lucide-react';
-import { PropertyCategory, PropertyPurpose, FurnishingStatus } from '../types';
+import { Sparkles, Loader2, Plus, X, Building, DollarSign, MapPin, ListPlus, Trash2, Image as ImageIcon, AlertCircle, Check, CheckCircle, UploadCloud, Info, Camera } from 'lucide-react';
+import { Property, PropertyCategory, PropertyPurpose, FurnishingStatus } from '../types';
 import { INDIAN_CITIES, INDIAN_GEO_DATABASE, GeoLocationItem } from '../data';
 import { validatePropertyImage, uploadImageToAWS } from '../services/imageUploadService';
 
@@ -34,9 +34,10 @@ interface AddPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => Promise<void>;
+  propertyToEdit?: Property | null;
 }
 
-export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPropertyModalProps) {
+export default function AddPropertyModal({ isOpen, onClose, onSubmit, propertyToEdit }: AddPropertyModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Keyboard accessibility listeners (Escape Closure & Focus Trapping)
@@ -176,6 +177,112 @@ export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPrope
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // Camera capture states
+  const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Clean up camera stream on unmount or active changes
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      setIsCameraActive(false);
+    }
+  }, [isOpen]);
+
+  const handleStartCamera = async (deviceId?: string) => {
+    setCameraError(null);
+    setIsCameraActive(true);
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (!navigator.mediaDevices) {
+        throw new Error("navigator.mediaDevices is unsupported or blocked in this browser context.");
+      }
+      const constraints: MediaStreamConstraints = {
+        video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' },
+        audio: false
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 50);
+
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter(d => d.kind === 'videoinput');
+      setDevices(videoDevices);
+      if (videoDevices.length > 0 && !selectedDeviceId) {
+        setSelectedDeviceId(videoDevices[0].deviceId);
+      }
+    } catch (err: any) {
+      console.error("Camera capture failed:", err);
+      setCameraError("Camera access failed or is unsupported/denied in this context. Please check security context (HTTPS) or device configuration.");
+      showToast("Could not access camera. Check permissions/HTTPS context.", "error");
+    }
+  };
+
+  const handleStopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const handleCaptureSnapshot = () => {
+    if (!videoRef.current) return;
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const capturedFile = new File([blob], `snap_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            setImageUrl('custom');
+            setImageFiles(prev => [...prev, capturedFile]);
+            setGalleryImages(prev => {
+              if (imageUrl !== 'custom') {
+                return [dataUrl];
+              }
+              return [...prev, dataUrl];
+            });
+            showToast("Photo captured and attached successfully!", "success");
+            handleStopCamera();
+          }
+        }, 'image/jpeg', 0.9);
+      }
+    } catch (err) {
+      console.error("Snapshot capture failure:", err);
+      showToast("Failed to snapshot photo from video stream.", "error");
+    }
+  };
+
   // AWS S3 simulated state
   const [awsUploading, setAwsUploading] = useState(false);
   const [awsProgress, setAwsProgress] = useState(0);
@@ -194,18 +301,112 @@ export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPrope
 
   useEffect(() => {
     if (isOpen) {
-      setImageUrl('preset1');
-      setGalleryImages([...presetImages.preset1]);
-      setImageFiles([]);
-      setNewImageUrl('');
-      setImageError(null);
-      setDragActive(false);
-      setAwsUploading(false);
-      setAwsProgress(0);
-      setAwsStatus('');
-      setToasts([]);
+      if (propertyToEdit) {
+        setTitle(propertyToEdit.title || '');
+        setDescription(propertyToEdit.description || '');
+        setCategory(propertyToEdit.category || 'RESIDENTIAL');
+        setType(propertyToEdit.type || 'Apartment');
+        setPurpose(propertyToEdit.purpose || 'SELL');
+        setPrice(propertyToEdit.price || 0);
+        setSecurityDeposit(propertyToEdit.securityDeposit || 0);
+        setMaintenanceCharges(propertyToEdit.maintenanceCharges || 0);
+        
+        setCity(propertyToEdit.location?.city || '');
+        setStateName(propertyToEdit.location?.state || '');
+        setDistrictName((propertyToEdit.location as any)?.district || '');
+        setCitySearch(propertyToEdit.location?.city || '');
+        setArea(propertyToEdit.location?.area || '');
+        setAddress(propertyToEdit.location?.address || '');
+        setPostalCode(propertyToEdit.location?.postalCode || '');
+        setLatitude(propertyToEdit.location?.latitude || 18.9750);
+        setLongitude(propertyToEdit.location?.longitude || 72.8258);
+        
+        setBedrooms(propertyToEdit.details?.bedrooms || 0);
+        setBathrooms(propertyToEdit.details?.bathrooms || 0);
+        setBalconies(propertyToEdit.details?.balconies || 0);
+        setFloors(propertyToEdit.details?.floors || 0);
+        setFloorNo(propertyToEdit.details?.floorNo || 0);
+        setPropertyArea(propertyToEdit.details?.area || 0);
+        setFurnishingStatus(propertyToEdit.details?.furnishingStatus || 'UNFURNISHED');
+        setFacingDirection(propertyToEdit.details?.facingDirection || 'East');
+        setWaterSupply(propertyToEdit.details?.waterSupply || '24 Hours Available');
+        setGatedCommunity(propertyToEdit.details?.gatedCommunity !== false);
+        setReraId(propertyToEdit.details?.reraId || '');
+        setPropertyAge(propertyToEdit.details?.propertyAge || '');
+        setPossessionStatus(propertyToEdit.details?.possessionStatus || '');
+        setFlooringType(propertyToEdit.details?.flooringType || '');
+        setNearbyLandmark(propertyToEdit.details?.nearbyLandmark || '');
+        
+        // Amenities
+        const initialAmens = { ...propertyToEdit.amenities };
+        setSelectedAmenities(initialAmens);
+        
+        // Images
+        if (propertyToEdit.images && propertyToEdit.images.length > 0) {
+          setImageUrl('custom');
+          setGalleryImages([...propertyToEdit.images]);
+        } else {
+          setImageUrl('preset1');
+          setGalleryImages([...presetImages.preset1]);
+        }
+        setImageFiles([]);
+        setNewImageUrl('');
+        setImageError(null);
+        setDragActive(false);
+        setAwsUploading(false);
+        setAwsProgress(0);
+        setAwsStatus('');
+        setToasts([]);
+      } else {
+        // Reset to default additions mode
+        setTitle('');
+        setDescription('');
+        setCategory('RESIDENTIAL');
+        setType('Apartment');
+        setPurpose('SELL');
+        setPrice(5500000);
+        setSecurityDeposit(0);
+        setMaintenanceCharges(0);
+        
+        setCity('Mumbai');
+        setStateName('Maharashtra');
+        setDistrictName('Mumbai City / Suburban');
+        setCitySearch('Mumbai');
+        setArea('Bandra West');
+        setAddress('Turner Road, Bandra');
+        setPostalCode('400050');
+        setLatitude(18.9750);
+        setLongitude(72.8258);
+        
+        setBedrooms(3);
+        setBathrooms(3);
+        setBalconies(2);
+        setFloors(10);
+        setFloorNo(3);
+        setPropertyArea(1400);
+        setFurnishingStatus('FULLY_FURNISHED');
+        setFacingDirection('East');
+        setWaterSupply('24 Hours Available (Municipal + Borewell)');
+        setGatedCommunity(true);
+        setReraId('');
+        setPropertyAge('1-3 Years');
+        setPossessionStatus('Ready to Move');
+        setFlooringType('Vitrified Tiles');
+        setNearbyLandmark('Opposite Central Metro Station');
+        
+        setImageUrl('preset1');
+        setGalleryImages([...presetImages.preset1]);
+        setImageFiles([]);
+        setNewImageUrl('');
+        setImageError(null);
+        setDragActive(false);
+        setAwsUploading(false);
+        setAwsProgress(0);
+        setAwsStatus('');
+        setToasts([]);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, propertyToEdit]);
 
   const handleSelectPreset = (preset: 'preset1' | 'preset2' | 'preset3') => {
     setImageUrl(preset);
@@ -449,8 +650,12 @@ export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPrope
           <div className="flex items-center gap-2">
             <Building className="h-5.5 w-5.5 text-blue-400" />
             <div>
-              <h2 className="text-base font-bold font-sans text-white">List Your Property</h2>
-              <p className="text-[10px] text-white/50">Add listings to ApnaGhar network</p>
+              <h2 className="text-base font-bold font-sans text-white">
+                {propertyToEdit ? 'Modify Property Listing' : 'List Your Property'}
+              </h2>
+              <p className="text-[10px] text-white/50 border-0">
+                {propertyToEdit ? 'Update list details instantly' : 'Add listings to ApnaGhar network'}
+              </p>
             </div>
           </div>
           <button 
@@ -1092,34 +1297,111 @@ export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPrope
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Drag and Drop multiple files */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-white/40 uppercase font-mono block">6a. Drag & Drop or select multiple image files</span>
-                <div 
-                  id="gallery-file-dropzone"
-                  onDragEnter={handleDrag}
-                  onDragOver={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById('property-gallery-file-upload')?.click()}
-                  className={`border border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 select-none min-h-[96px] ${
-                    dragActive 
-                      ? 'border-blue-500 bg-blue-500/10 text-white' 
-                      : 'border-white/10 hover:border-white/30 hover:bg-white/5 bg-slate-900/30 text-white/60'
-                  }`}
-                >
-                  <input
-                    type="file"
-                    id="property-gallery-file-upload"
-                    multiple
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <ListPlus className="h-6 w-6 text-blue-400 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-bold text-white">Drag and drop images, or <span className="text-blue-400 underline">browse</span></p>
-                    <p className="text-[8px] text-white/40 font-mono uppercase">JPG, PNG, OR WEBP (MAX 5MB)</p>
+                <span className="text-[10px] font-bold text-white/40 uppercase font-mono block">6a. Drag & Drop or Snap Photo</span>
+
+                {isCameraActive ? (
+                  <div className="bg-slate-950 rounded-2xl border border-blue-500/30 p-4 space-y-3 animate-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span className="text-[9px] font-bold font-mono text-white/80 uppercase">Camera Active</span>
+                      </div>
+                      {devices.length > 1 && (
+                        <select
+                          value={selectedDeviceId}
+                          onChange={(e) => {
+                            setSelectedDeviceId(e.target.value);
+                            handleStartCamera(e.target.value);
+                          }}
+                          className="bg-slate-900 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] text-white/80 focus:outline-none cursor-pointer font-mono"
+                        >
+                          {devices.map(d => (
+                            <option key={d.deviceId} value={d.deviceId}>
+                              {d.label ? (d.label.length > 18 ? `${d.label.substring(0, 15)}...` : d.label) : `Camera ${devices.indexOf(d) + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    
+                    <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 flex items-center justify-center">
+                      {cameraError ? (
+                        <div className="text-center p-4 space-y-1">
+                          <AlertCircle className="h-6 w-6 text-red-500 mx-auto" />
+                          <p className="text-[10px] text-red-400 font-mono leading-tight">{cameraError}</p>
+                        </div>
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={handleStopCamera}
+                        className="px-2.5 py-1.5 hover:bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-white/70"
+                      >
+                        Cancel
+                      </button>
+                      {!cameraError && (
+                        <button
+                          type="button"
+                          onClick={handleCaptureSnapshot}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                        >
+                          <Camera className="h-3.5 w-3.5" />
+                          <span>Snap Photo</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div 
+                      id="gallery-file-dropzone"
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      onClick={() => document.getElementById('property-gallery-file-upload')?.click()}
+                      className={`border border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 select-none min-h-[96px] ${
+                        dragActive 
+                          ? 'border-blue-500 bg-blue-500/10 text-white' 
+                          : 'border-white/10 hover:border-white/30 hover:bg-white/5 bg-slate-900/30 text-white/60'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="property-gallery-file-upload"
+                        multiple
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <ListPlus className="h-6 w-6 text-blue-400 shrink-0" />
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-bold text-white">Drag and drop images, or <span className="text-blue-400 underline">browse</span></p>
+                        <p className="text-[8px] text-white/40 font-mono uppercase">JPG, PNG, OR WEBP (MAX 5MB)</p>
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => handleStartCamera()}
+                      className="w-full py-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/35 text-blue-300 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md mt-2"
+                    >
+                      <Camera className="h-3.5 w-3.5 text-blue-400 animate-pulse" />
+                      <span>Snap a Photo with Device Camera</span>
+                    </button>
+                  </>
+                )}
+
                 {imageFiles.length > 0 && (
                   <div className="flex items-center justify-between bg-slate-950/65 rounded-xl px-2.5 py-1.5 border border-white/5 animate-in fade-in">
                     <span className="text-[9px] font-bold text-emerald-400 font-mono flex items-center gap-1">
@@ -1377,12 +1659,12 @@ export default function AddPropertyModal({ isOpen, onClose, onSubmit }: AddPrope
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Submitting Listing...</span>
+                  <span>{propertyToEdit ? 'Saving Changes...' : 'Submitting Listing...'}</span>
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
-                  <span>Submit Property Listing</span>
+                  {propertyToEdit ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  <span>{propertyToEdit ? 'Save Listing Changes' : 'Submit Property Listing'}</span>
                 </>
               )}
             </button>

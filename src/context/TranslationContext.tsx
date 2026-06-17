@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeStorage } from '../services/safeStorage';
 
 export type Locale = 'en' | 'hi' | 'mr';
 
@@ -220,18 +221,16 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 
 export function TranslationProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('apnaghar_locale');
-      if (saved === 'hi' || saved === 'mr' || saved === 'en') {
-        return saved;
-      }
+    const saved = safeStorage.getItem('apnaghar_locale');
+    if (saved === 'hi' || saved === 'mr' || saved === 'en') {
+      return saved;
     }
     return 'en';
   });
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('apnaghar_locale', newLocale);
+    safeStorage.setItem('apnaghar_locale', newLocale);
   };
 
   const t = (key: string): string => {

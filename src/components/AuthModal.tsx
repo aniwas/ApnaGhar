@@ -179,12 +179,16 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       setIsGoogleChooserOpen(false);
       setSuccessAnimation(true);
       
+      const normalizedEmail = selectedEmail.toLowerCase();
+      const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+      const finalRole = (selectedRole === UserRole.ADMIN && !isAdminAuthorized) ? UserRole.BUYER : selectedRole;
+
       // Complete auth session
       setTimeout(() => {
         onAuthSuccess({
           name: selectedName || 'Google User',
-          email: selectedEmail.toLowerCase(),
-          role: selectedRole
+          email: normalizedEmail,
+          role: finalRole
         });
         setSuccessAnimation(false);
         onClose();
@@ -207,11 +211,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       setIsFacebookChooserOpen(false);
       setSuccessAnimation(true);
       
+      const normalizedEmail = selectedEmail.toLowerCase();
+      const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+      const finalRole = (selectedRole === UserRole.ADMIN && !isAdminAuthorized) ? UserRole.BUYER : selectedRole;
+
       setTimeout(() => {
         onAuthSuccess({
           name: selectedName || 'Facebook User',
-          email: selectedEmail.toLowerCase(),
-          role: selectedRole
+          email: normalizedEmail,
+          role: finalRole
         });
         setSuccessAnimation(false);
         onClose();
@@ -222,6 +230,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    const normalizedEmail = email.toLowerCase();
+    const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+    const finalRole = (selectedRole === UserRole.ADMIN && !isAdminAuthorized) ? UserRole.BUYER : (selectedRole || UserRole.BUYER);
 
     // Validation
     if (isSignUp) {
@@ -251,8 +263,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       setTimeout(() => {
         onAuthSuccess({
           name: fullName,
-          email: email.toLowerCase(),
-          role: selectedRole
+          email: normalizedEmail,
+          role: finalRole
         });
         setSuccessAnimation(false);
         onClose();
@@ -278,8 +290,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       setTimeout(() => {
         onAuthSuccess({
           name: email.split('@')[0].toUpperCase(),
-          email: email.toLowerCase(),
-          role: selectedRole || UserRole.BUYER
+          email: normalizedEmail,
+          role: finalRole
         });
         setSuccessAnimation(false);
         onClose();
@@ -347,15 +359,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                     {/* 1. Primary Verified Owner Email Match */}
                     <button
                       type="button"
-                      onClick={() => handleSelectGoogleAccount('aniwas111@gmail.com', 'Anil Vasudevan')}
+                      onClick={() => handleSelectGoogleAccount('priya@gmail.com', 'Priya Sharma')}
                       className="w-full p-3.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 rounded-2xl text-left flex items-center gap-3 transition-all cursor-pointer group active:scale-[0.99]"
                     >
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-600 text-white font-extrabold flex items-center justify-center text-xs border border-white/10">
-                        AV
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-600 text-white font-extrabold flex items-center justify-center text-xs border border-white/10">
+                        PS
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Anil Vasudevan</div>
-                        <div className="text-[10px] text-white/40 truncate font-mono">aniwas111@gmail.com</div>
+                        <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Priya Sharma</div>
+                        <div className="text-[10px] text-white/40 truncate font-mono">priya@gmail.com</div>
                       </div>
                       <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full uppercase font-bold shrink-0">default</span>
                     </button>
@@ -454,15 +466,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                   <div className="space-y-2.5">
                     <button
                       type="button"
-                      onClick={() => handleSelectFacebookAccount('anil.vasudev@facebook.com', 'Anil Vasudevan')}
+                      onClick={() => handleSelectFacebookAccount('priya@gmail.com', 'Priya Sharma')}
                       className="w-full p-3.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 rounded-2xl text-left flex items-center gap-3 transition-all cursor-pointer group active:scale-[0.99]"
                     >
-                      <div className="h-9 w-9 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs border border-white/10">
-                        FB
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-600 text-white font-extrabold flex items-center justify-center text-xs border border-white/10 animate-pulse">
+                        PS
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white group-hover:text-blue-500 transition-colors">Anil Vasudevan</div>
-                        <div className="text-[10px] text-white/40 truncate font-mono">anil.vasudev@facebook.com</div>
+                        <div className="text-xs font-bold text-white group-hover:text-blue-500 transition-colors">Priya Sharma</div>
+                        <div className="text-[10px] text-white/40 truncate font-mono">priya@gmail.com</div>
                       </div>
                       <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full uppercase font-bold shrink-0">linked</span>
                     </button>
@@ -669,14 +681,20 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                   <Briefcase className="absolute left-3 top-2.5 h-3.5 w-3.5 text-white/30" />
                   <select
                     value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                    onChange={(e) => {
+                      const val = e.target.value as UserRole;
+                      setSelectedRole(val);
+                    }}
                     className="w-full bg-slate-950 border border-white/10 focus:border-blue-500 pl-9 pr-3 py-2 text-xs rounded-xl focus:outline-none text-white font-bold cursor-pointer [&>option]:bg-slate-900"
                   >
                     <option value={UserRole.BUYER}>Property Buyer (Calculate EMI, Save Matching alerts)</option>
                     <option value={UserRole.TENANT}>Lease Tenant (Explore renting spaces)</option>
                     <option value={UserRole.OWNER}>Home Owner (List your own house)</option>
                     <option value={UserRole.AGENT}>Professional Agent (Lead matching dashboard)</option>
-                    <option value={UserRole.ADMIN}>Admin Executive (Moderate ApnaGhar indices)</option>
+                    {/* Conditionally reveal ADMIN option only if the current entered email matches administrative domain */}
+                    {(email.toLowerCase().endsWith('@apnaghar.com') || email.toLowerCase() === 'aniwas111@gmail.com') && (
+                      <option value={UserRole.ADMIN}>Admin Executive (Moderate ApnaGhar indices)</option>
+                    )}
                   </select>
                 </div>
               </div>

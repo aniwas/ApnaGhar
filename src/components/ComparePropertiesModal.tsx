@@ -132,9 +132,9 @@ export default function ComparePropertiesModal({
                           Remove
                         </button>
                         <div className="pr-12">
-                          <img src={p.images[0]} className="w-full h-24 object-cover rounded-xl bg-slate-950 border border-white/10 mb-2" />
-                          <h4 className="font-extrabold text-white text-xs line-clamp-1">{p.title}</h4>
-                          <span className="text-[9px] font-mono font-black text-blue-400">{p.location.area}, {p.location.city}</span>
+                          <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80'} className="w-full h-24 object-cover rounded-xl bg-slate-950 border border-white/10 mb-2" />
+                          <h4 className="font-extrabold text-white text-xs line-clamp-1">{p.title || 'Property'}</h4>
+                          <span className="text-[9px] font-mono font-black text-blue-400">{p.location?.area || ''}, {p.location?.city || ''}</span>
                         </div>
                       </th>
                     ))}
@@ -191,7 +191,7 @@ export default function ComparePropertiesModal({
                     <td className="p-4 font-mono font-bold text-white/60 uppercase tracking-wide text-[9px]">BHK Beds Layout</td>
                     {selectedList.map(p => (
                       <td key={p.id} className="p-4 border-l border-white/10 font-bold">
-                        {p.details.bedrooms ? `${p.details.bedrooms} BHK configuration` : 'Commercial plot'}
+                        {p.details?.bedrooms ? `${p.details.bedrooms} BHK configuration` : 'Commercial/Standard plot'}
                       </td>
                     ))}
                     {selectedList.length < 3 && Array.from({ length: 3 - selectedList.length }).map((_, i) => <td key={i} className="p-4 border-l border-white/10 bg-slate-950/20"></td>)}
@@ -202,7 +202,7 @@ export default function ComparePropertiesModal({
                     <td className="p-4 font-mono font-bold text-white/60 uppercase tracking-wide text-[9px]">Bathrooms count</td>
                     {selectedList.map(p => (
                       <td key={p.id} className="p-4 border-l border-white/10 font-mono">
-                        {p.details.bathrooms || '-'} Baths
+                        {p.details?.bathrooms || '-'} Baths
                       </td>
                     ))}
                     {selectedList.length < 3 && Array.from({ length: 3 - selectedList.length }).map((_, i) => <td key={i} className="p-4 border-l border-white/10 bg-slate-950/20"></td>)}
@@ -213,7 +213,7 @@ export default function ComparePropertiesModal({
                     <td className="p-4 font-mono font-bold text-white/60 uppercase tracking-wide text-[9px]">Super Built Area</td>
                     {selectedList.map(p => (
                       <td key={p.id} className="p-4 border-l border-white/10 font-mono text-emerald-400 font-bold">
-                        {p.details.area} Sq. Ft.
+                        {p.details?.area ? `${p.details.area} Sq. Ft.` : 'N/A'}
                       </td>
                     ))}
                     {selectedList.length < 3 && Array.from({ length: 3 - selectedList.length }).map((_, i) => <td key={i} className="p-4 border-l border-white/10 bg-slate-950/20"></td>)}
@@ -224,7 +224,7 @@ export default function ComparePropertiesModal({
                     <td className="p-4 font-mono font-bold text-white/60 uppercase tracking-wide text-[9px]">Furnishing status</td>
                     {selectedList.map(p => (
                       <td key={p.id} className="p-4 border-l border-white/10 font-sans capitalize">
-                        {p.details.furnishingStatus ? p.details.furnishingStatus.toLowerCase() : 'Unspecified'}
+                        {p.details?.furnishingStatus ? p.details.furnishingStatus.toLowerCase() : 'Unspecified'}
                       </td>
                     ))}
                     {selectedList.length < 3 && Array.from({ length: 3 - selectedList.length }).map((_, i) => <td key={i} className="p-4 border-l border-white/10 bg-slate-950/20"></td>)}
@@ -252,7 +252,7 @@ export default function ComparePropertiesModal({
                     <tr key={amenity.key}>
                       <td className="p-3 font-medium text-white/70 pl-6 text-[11px]">{amenity.label}</td>
                       {selectedList.map(p => {
-                        const hasIt = !!(p.amenities as any)[amenity.key];
+                        const hasIt = p.amenities ? !!(p.amenities as any)[amenity.key] : false;
                         return (
                           <td key={p.id} className="p-3 border-l border-white/10 text-center">
                             {hasIt ? (

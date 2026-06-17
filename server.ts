@@ -4,7 +4,7 @@ import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { SAMPLE_PROPERTIES } from './src/data.js';
-import { Property, Booking, Review, ChatMessage, ChatConversation, UserRole } from './src/types.js';
+import { Property, Booking, Review, ChatMessage, ChatConversation, UserRole, Promotion } from './src/types.js';
 
 // Setup local persistence
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -87,6 +87,13 @@ interface TenantScreening {
   createdAt: string;
 }
 
+export interface PriceAlertSubscription {
+  id: string;
+  propertyId: string;
+  email: string;
+  createdAt: string;
+}
+
 let dbData: {
   properties: Property[];
   bookings: Booking[];
@@ -99,12 +106,52 @@ let dbData: {
   amenities: MasterAmenity[];
   communityVibes: CommunityVibe[];
   tenantScreenings: TenantScreening[];
+  promos: Promotion[];
+  priceAlerts: PriceAlertSubscription[];
+  securityLogs?: any[];
 } = {
   properties: SAMPLE_PROPERTIES,
   bookings: [],
   voiceInquiries: [],
   communityVibes: [],
   tenantScreenings: [],
+  priceAlerts: [],
+  securityLogs: [],
+  promos: [
+    {
+      id: "promo-1",
+      title: "Monsoon Premium Housing Fest 2026",
+      description: "Book any residential penthouse or premium duplex in any metropolitan city and get flat 50% waiver on initial booking and immediate stamp duty assistance!",
+      type: "OFFER",
+      imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000",
+      badge: "MONSOON FEST",
+      linkUrl: "#",
+      active: true,
+      createdAt: "2026-06-10T10:00:00Z"
+    },
+    {
+      id: "promo-2",
+      title: "Ultra Luxury Smart Office Suites",
+      description: "Now Leasing premium high-tech glassmorphic desk spaces in Bandra Kurla Complex (BKC) and South Mumbai, starting at only ₹85,000/month. Standard amenities fully loaded.",
+      type: "FEATURED",
+      imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000",
+      badge: "NEW LUXURY",
+      linkUrl: "#",
+      active: true,
+      createdAt: "2026-06-11T12:00:00Z"
+    },
+    {
+      id: "promo-3",
+      title: "Get 0% Brokerage with ApnaGhar Premium Memberships",
+      description: "Unlock certified Direct-From-Owner listings and complete the transactions with absolute zero brokerage fee. Dedicated VIP Relationship Managers on speed dial.",
+      type: "PROMOTIONAL",
+      imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000",
+      badge: "0% BROKERAGE",
+      linkUrl: "#",
+      active: true,
+      createdAt: "2026-06-12T08:00:00Z"
+    }
+  ],
   amenities: [
     { id: 'parking', label: 'Reserved Parking', active: true },
     { id: 'lift', label: 'Speed Lift', active: true },
@@ -204,6 +251,41 @@ if (fs.existsSync(DB_PATH)) {
   try {
     const raw = fs.readFileSync(DB_PATH, 'utf-8');
     dbData = JSON.parse(raw);
+    if (!dbData.promos) dbData.promos = [
+      {
+        id: "promo-1",
+        title: "Monsoon Premium Housing Fest 2026",
+        description: "Book any residential penthouse or premium duplex in any metropolitan city and get flat 50% waiver on initial booking and immediate stamp duty assistance!",
+        type: "OFFER",
+        imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000",
+        badge: "MONSOON FEST",
+        linkUrl: "#",
+        active: true,
+        createdAt: "2026-06-10T10:00:00Z"
+      },
+      {
+        id: "promo-2",
+        title: "Ultra Luxury Smart Office Suites",
+        description: "Now Leasing premium high-tech glassmorphic desk spaces in Bandra Kurla Complex (BKC) and South Mumbai, starting at only ₹85,000/month. Standard amenities fully loaded.",
+        type: "FEATURED",
+        imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000",
+        badge: "NEW LUXURY",
+        linkUrl: "#",
+        active: true,
+        createdAt: "2026-06-11T12:00:00Z"
+      },
+      {
+        id: "promo-3",
+        title: "Get 0% Brokerage with ApnaGhar Premium Memberships",
+        description: "Unlock certified Direct-From-Owner listings and complete the transactions with absolute zero brokerage fee. Dedicated VIP Relationship Managers on speed dial.",
+        type: "PROMOTIONAL",
+        imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000",
+        badge: "0% BROKERAGE",
+        linkUrl: "#",
+        active: true,
+        createdAt: "2026-06-12T08:00:00Z"
+      }
+    ];
     if (!dbData.alerts) dbData.alerts = [];
     if (!dbData.notifications) dbData.notifications = [];
     if (!dbData.voiceInquiries) dbData.voiceInquiries = [];
@@ -357,12 +439,46 @@ if (fs.existsSync(DB_PATH)) {
 }
 
 function saveDB() {
+  saveDBTracked('DATABASE', 'UPDATE');
+}
+
+interface DBLog {
+  timestamp: string;
+  action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'SYNC' | 'DIAGNOSTICS';
+  entity: string;
+  status: 'SUCCESS' | 'ERROR' | 'INFO';
+  message: string;
+  payload?: any;
+}
+
+const dbOperationLogs: DBLog[] = [];
+
+function addDBLog(action: DBLog['action'], entity: string, status: DBLog['status'], message: string, payload?: any) {
+  const logEntry: DBLog = {
+    timestamp: new Date().toISOString(),
+    action,
+    entity,
+    status,
+    message,
+    payload: payload ? JSON.parse(JSON.stringify(payload)) : undefined
+  };
+  dbOperationLogs.unshift(logEntry);
+  if (dbOperationLogs.length > 200) {
+    dbOperationLogs.pop(); // Keep last 200 entries
+  }
+  console.log(`[DB_LOG][${logEntry.timestamp}][${action}][${status}] - ${message}`);
+}
+
+function saveDBTracked(affectedEntity?: string, actionType: DBLog['action'] = 'UPDATE') {
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(dbData, null, 2), 'utf-8');
-  } catch (err) {
+    addDBLog(actionType, affectedEntity || 'DATABASE', 'SUCCESS', `Persistent database JSON successfully saved to disk. Total properties: ${dbData.properties?.length || 0}`);
+  } catch (err: any) {
     console.error('Error saving database: ', err);
+    addDBLog(actionType, affectedEntity || 'DATABASE', 'ERROR', `Failed writing database JSON to disk. Error: ${err.message || err}`);
   }
 }
+
 
 function generateSitemapXML() {
   try {
@@ -429,14 +545,90 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  const checkAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const userEmail = (req.headers['x-user-email'] || req.body.adminEmail || '').toString().trim().toLowerCase();
+    const userRole = (req.headers['x-user-role'] || req.body.adminRole || '').toString().trim().toUpperCase();
+
+    const isAdminAuthorized = (userEmail.endsWith('@apnaghar.com') || userEmail === 'aniwas111@gmail.com') && userRole === 'ADMIN';
+
+    if (!isAdminAuthorized) {
+      return res.status(403).json({ error: 'Access Denied: Action requires verified administrative permissions.' });
+    }
+    next();
+  };
+
   // --- API ROUTES ---
+
+  // Database Connection Status & Persisted Properties Diagnostics (Admin Secured)
+  app.get('/api/diagnostics/db', checkAdminAuth, (req, res) => {
+    let fileExists = false;
+    let sizeBytes = 0;
+    let filePermissions = 'unknown';
+
+    try {
+      if (fs.existsSync(DB_PATH)) {
+        fileExists = true;
+        const stats = fs.statSync(DB_PATH);
+        sizeBytes = stats.size;
+        try {
+          fs.accessSync(DB_PATH, fs.constants.R_OK | fs.constants.W_OK);
+          filePermissions = 'Read/Write';
+        } catch {
+          filePermissions = 'Read-Only / Protected';
+        }
+      }
+    } catch (e: any) {
+      console.error("[Diagnostics] Error checking db file:", e.message);
+    }
+
+    const memUsage = process.memoryUsage();
+    res.json({
+      status: 'connected',
+      connectionStatus: 'ACTIVE',
+      dbType: 'JSON_JSONDB',
+      dbLocation: DB_PATH,
+      fileExists,
+      fileSizeBytes: sizeBytes,
+      filePermissions,
+      totalProperties: dbData.properties?.length || 0,
+      propertyCountsByStatus: {
+        PENDING: dbData.properties?.filter(p => p.status === 'PENDING').length || 0,
+        APPROVED: dbData.properties?.filter(p => p.status === 'APPROVED').length || 0,
+        SOLD: dbData.properties?.filter(p => p.status === 'SOLD').length || 0,
+        RENTED: dbData.properties?.filter(p => p.status === 'RENTED').length || 0,
+        REJECTED: dbData.properties?.filter(p => p.status === 'REJECTED').length || 0,
+      },
+      counts: {
+        properties: dbData.properties?.length || 0,
+        bookings: dbData.bookings?.length || 0,
+        reviews: dbData.reviews?.length || 0,
+        conversations: dbData.conversations?.length || 0,
+        alerts: dbData.alerts?.length || 0,
+        notifications: dbData.notifications?.length || 0,
+        users: dbData.users?.length || 0,
+        voiceInquiries: dbData.voiceInquiries?.length || 0,
+        amenities: dbData.amenities?.length || 0,
+        communityVibes: dbData.communityVibes?.length || 0,
+        tenantScreenings: dbData.tenantScreenings?.length || 0,
+        promos: dbData.promos?.length || 0,
+        priceAlerts: dbData.priceAlerts?.length || 0,
+        securityLogs: dbData.securityLogs?.length || 0,
+      },
+      persistenceMethod: 'File-based (fs/db.json)',
+      ephemeralVolumeWarning: 'On server restarts or scale-to-zero triggers, the disk gets wiped and state falls back to initial values unless synced (local storage sync active). Connect Google Cloud SQL or Firestore for durable enterprise-grade operations.',
+      serverLogs: dbOperationLogs,
+      processUptimeSeconds: Math.floor(process.uptime()),
+      heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024 * 100) / 100,
+      ramTotalAllocatedMB: Math.round(memUsage.rss / 1024 / 1024 * 100) / 100
+    });
+  });
 
   // 0. Amenities Management API (Managed by Admin)
   app.get('/api/amenities', (req, res) => {
     res.json(dbData.amenities || []);
   });
 
-  app.post('/api/amenities', (req, res) => {
+  app.post('/api/amenities', checkAdminAuth, (req, res) => {
     const { label, id, active } = req.body;
     if (!label) {
       return res.status(400).json({ error: 'Label is required' });
@@ -459,7 +651,7 @@ async function startServer() {
     res.json({ success: true, amenities: dbData.amenities });
   });
 
-  app.put('/api/amenities/:id', (req, res) => {
+  app.put('/api/amenities/:id', checkAdminAuth, (req, res) => {
     const { id } = req.params;
     const { label, active } = req.body;
     const item = dbData.amenities.find(a => a.id === id);
@@ -472,7 +664,7 @@ async function startServer() {
     res.json({ success: true, amenity: item, amenities: dbData.amenities });
   });
 
-  app.delete('/api/amenities/:id', (req, res) => {
+  app.delete('/api/amenities/:id', checkAdminAuth, (req, res) => {
     const { id } = req.params;
     dbData.amenities = dbData.amenities.filter(a => a.id !== id);
     saveDB();
@@ -489,7 +681,7 @@ async function startServer() {
       const reviewsCount = propRevs.length;
       return { ...p, averageRating, reviewsCount };
     });
-    const { category, purpose, city, type, minPrice, maxPrice, bedrooms, search, ownerId } = req.query;
+    const { category, purpose, city, type, minPrice, maxPrice, bedrooms, search, ownerId, status, all } = req.query;
 
     if (category) {
       list = list.filter(p => p.category === category);
@@ -525,6 +717,21 @@ async function startServer() {
       );
     }
 
+    // Default status filtering: for guest / public catalog searches, only approved, sold, or rented properties are visible.
+    // Authorized roles like Admin, Agent, and Owner can bypass this filter by providing `all=true`.
+    const userEmail = (req.headers['x-user-email'] || '').toString().trim().toLowerCase();
+    const userRole = (req.headers['x-user-role'] || '').toString().trim().toUpperCase();
+    const isAdmin = (userEmail.endsWith('@apnaghar.com') || userEmail === 'aniwas111@gmail.com') && userRole === 'ADMIN';
+    const isAgentOrOwner = userRole === 'AGENT' || userRole === 'OWNER';
+
+    const canSeeAll = (isAdmin || isAgentOrOwner) && all === 'true';
+
+    if (!canSeeAll) {
+      list = list.filter(p => p.status === 'APPROVED' || p.status === 'SOLD' || p.status === 'RENTED');
+    } else if (status) {
+      list = list.filter(p => p.status === (status as string).toUpperCase());
+    }
+
     res.json(list);
   });
 
@@ -548,12 +755,22 @@ async function startServer() {
 
   app.post('/api/properties', (req, res) => {
     const data = req.body;
+    addDBLog('CREATE', 'PROPERTY', 'INFO', `Received request to create property: "${data.title || 'untitled'}". ID: ${data.id || 'new'}. Price: ${data.price || 'n/a'}. ownerId: ${data.ownerId || 'unknown'}`, {
+      title: data.title,
+      id: data.id,
+      category: data.category,
+      price: data.price,
+      ownerId: data.ownerId,
+      status: data.status
+    });
+
     if (!data.title || !data.category || !data.price) {
+      addDBLog('CREATE', 'PROPERTY', 'ERROR', `Validation Failure: Missing fields. Required: title, category, price. Brand: "${data.title || 'NULL'}"`);
       return res.status(400).json({ error: 'Missing mandatory property fields.' });
     }
 
     const newProp: Property = {
-      id: `prop-${Date.now()}`,
+      id: data.id || `prop-${Date.now()}`,
       title: data.title,
       description: data.description || 'No description provided.',
       category: data.category,
@@ -619,12 +836,12 @@ async function startServer() {
       ownerId: data.ownerId || 'owner-demo',
       ownerName: data.ownerName || 'Demo Host',
       ownerType: data.ownerType || 'OWNER',
-      status: 'APPROVED', // Auto approved for streamlined preview UX
-      views: 1,
-      leadsCount: 0,
+      status: data.status || 'PENDING',
+      views: data.views || 1,
+      leadsCount: data.leadsCount || 0,
       featured: !!data.featured,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString()
     };
 
     // Scan alert subscriptions and create mock email notifications
@@ -654,69 +871,212 @@ async function startServer() {
       });
     }
 
-    dbData.properties.unshift(newProp);
-    saveDB();
-    generateSitemapXML();
-    res.status(201).json(newProp);
+    try {
+      dbData.properties.unshift(newProp);
+      addDBLog('CREATE', 'PROPERTY', 'SUCCESS', `Constructed property object successfully. ID: ${newProp.id}, title: "${newProp.title}", status: ${newProp.status}. Proceeding to save DB.`);
+      saveDBTracked('PROPERTY', 'CREATE');
+      generateSitemapXML();
+      res.status(201).json(newProp);
+    } catch (saveError: any) {
+      addDBLog('CREATE', 'PROPERTY', 'ERROR', `Error inserting property to memory or files. Msg: ${saveError.message || saveError}`);
+      res.status(500).json({ error: 'Database saving exception occurred.' });
+    }
   });
 
   app.put('/api/properties/:id', (req, res) => {
     const idx = dbData.properties.findIndex(p => p.id === req.params.id);
     if (idx === -1) {
+      addDBLog('UPDATE', 'PROPERTY', 'ERROR', `Update failed: Property ID "${req.params.id}" not found in database.`);
       return res.status(404).json({ error: 'Property not found' });
     }
 
     const existing = dbData.properties[idx];
     const { status, moderationNotes, changedBy } = req.body;
 
-    let updatedHistory = existing.auditHistory || [];
+    const userEmail = (req.headers['x-user-email'] || req.body.userEmail || '').toString().trim().toLowerCase();
+    const userRole = (req.headers['x-user-role'] || req.body.userRole || '').toString().trim().toUpperCase();
+
+    addDBLog('UPDATE', 'PROPERTY', 'INFO', `Received request to update property ID: "${existing.id}" ("${existing.title}"). Initiated by user: "${userEmail || 'GUEST'}" (Role: ${userRole || 'NONE'}). Target Status change: "${existing.status}" ➔ "${status || existing.status}"`);
+
+    const isOwner = existing.ownerId?.toLowerCase() === userEmail || userEmail === 'owner-demo' || userEmail === 'agent-demo' || !userEmail;
+    const isAdmin = (userEmail.endsWith('@apnaghar.com') || userEmail === 'aniwas111@gmail.com') && userRole === 'ADMIN';
+
+    // Save previous version if owner is modifying the property
+    let updatedVersions = existing.versions || [];
+    let updatedStatus = status || existing.status;
+    let updatedModerationNotes = moderationNotes !== undefined ? moderationNotes : existing.moderationNotes;
+
+    if (!status && isOwner && !isAdmin) {
+      // It's an owner editing. Save the current state as a historical version.
+      const versionEntry = {
+        id: `version-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        title: existing.title,
+        description: existing.description,
+        price: existing.price,
+        status: existing.status,
+        moderationNotes: existing.moderationNotes || '',
+        updatedAt: existing.updatedAt || new Date().toISOString()
+      };
+      updatedVersions = [versionEntry, ...updatedVersions];
+      // Reset the status to PENDING on re-submission/editing
+      updatedStatus = 'PENDING';
+      updatedModerationNotes = '';
+    }
+
+    // If changing listing status, only administrative accounts can do that!
     if (status && status !== existing.status) {
+      if (!isAdmin) {
+        return res.status(403).json({ error: 'Access Denied: Only administrators are permitted to approve or reject property listings.' });
+      }
+    } else {
+      // If regular edit, they must either own it or be an administrator
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ error: 'Access Denied: You do not have permissions to edit this listing.' });
+      }
+    }
+
+    let updatedHistory = existing.auditHistory || [];
+    if (updatedStatus !== existing.status) {
       const entry = {
         id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         fromStatus: existing.status,
-        toStatus: status,
+        toStatus: updatedStatus,
         timestamp: new Date().toISOString(),
-        changedBy: changedBy || 'Admin Executive',
-        notes: moderationNotes || req.body.moderationNotes || ''
+        changedBy: changedBy || (isAdmin ? 'Admin Executive' : 'Owner/Agent'),
+        notes: updatedModerationNotes || ''
       };
       updatedHistory = [entry, ...updatedHistory];
     }
 
-    // Email dispatch simulation
-    if (status === 'REJECTED') {
-      const emailObj = {
-        id: `notif-${Date.now()}-${Math.random()}`,
-        email: existing.ownerId === 'agent-1' || existing.ownerId === 'agent-demo' ? 'rajesh@malhotraestates.com' : 'owner@apnaghar.com',
-        subject: `❌ Property Validation Rejected: ${existing.title}`,
-        body: `Hello,\n\nWe regret to inform you that your property listing "${existing.title}" was not approved during our manual audit.\n\nReason for Rejection:\n${moderationNotes || req.body.moderationNotes || 'The listing details did not satisfy our validation guidelines. Please edit and resubmit.'}\n\nPlease click on the ApnaGhar dashboard to correct your details.\n\nBest regards,\nApnaGhar Compliance Team`,
-        createdAt: new Date().toISOString()
-      };
-      dbData.notifications.unshift(emailObj);
-    } else if (status === 'APPROVED') {
-       const emailObj = {
-         id: `notif-${Date.now()}-${Math.random()}`,
-         email: existing.ownerId === 'agent-1' || existing.ownerId === 'agent-demo' ? 'rajesh@malhotraestates.com' : 'owner@apnaghar.com',
-         subject: `🎉 Property Listing Approved: ${existing.title}`,
-         body: `Greetings!\n\nYour property listing "${existing.title}" has been APPROVED and is now active on the ApnaGhar platform!\n\nBest regards,\nApnaGhar Compliance Team`,
-         createdAt: new Date().toISOString()
-       };
-       dbData.notifications.unshift(emailObj);
+    // Resolve owner email dynamically
+    let ownerEmail = 'owner@apnaghar.com';
+    if (existing.ownerId) {
+      if (existing.ownerId.includes('@')) {
+        ownerEmail = existing.ownerId;
+      } else {
+        const foundUser = (dbData.users || []).find((u: any) => u.id === existing.ownerId || u.name?.toLowerCase().includes(existing.ownerId.toLowerCase()));
+        if (foundUser && foundUser.email) {
+          ownerEmail = foundUser.email;
+        } else if (existing.ownerId === 'agent-demo' || existing.ownerId === 'agent-1') {
+          ownerEmail = 'rajesh@malhotraestates.com';
+        }
+      }
+    }
+
+    // Trigger automated email alert if status changes from 'PENDING' to 'APPROVED' or 'REJECTED'
+    if (existing.status === 'PENDING' && (updatedStatus === 'APPROVED' || updatedStatus === 'REJECTED')) {
+      dbData.notifications = dbData.notifications || [];
+      if (updatedStatus === 'REJECTED') {
+        const emailObj = {
+          id: `notif-${Date.now()}-${Math.random()}`,
+          email: ownerEmail,
+          subject: `❌ Property Validation Rejected: ${existing.title}`,
+          body: `Hello,\n\nWe regret to inform you that your property listing "${existing.title}" was not approved during our manual audit.\n\nReason for Rejection:\n${updatedModerationNotes || 'The listing details did not satisfy our validation guidelines. Please edit and resubmit a modified version.'}\n\nYou can view previous versions of your PENDING submission in your owner dashboard and resubmit adjustments at any time.\n\nBest regards,\nApnaGhar Compliance Team`,
+          createdAt: new Date().toISOString()
+        };
+        dbData.notifications.unshift(emailObj);
+      } else if (updatedStatus === 'APPROVED') {
+        const emailObj = {
+          id: `notif-${Date.now()}-${Math.random()}`,
+          email: ownerEmail,
+          subject: `🎉 Property Listing Approved: ${existing.title}`,
+          body: `Greetings!\n\nYour property listing "${existing.title}" has been APPROVED and is now active on the ApnaGhar platform!\n\nBest regards,\nApnaGhar Compliance Team`,
+          createdAt: new Date().toISOString()
+        };
+        dbData.notifications.unshift(emailObj);
+      }
+    }
+
+    // Check for price changes to dispatch alerts to subscribers
+    const originalPrice = existing.price;
+    const newPrice = req.body.price;
+    if (originalPrice !== undefined && newPrice !== undefined && Number(originalPrice) !== Number(newPrice)) {
+      dbData.priceAlerts = dbData.priceAlerts || [];
+      const subs = dbData.priceAlerts.filter((pa: any) => pa.propertyId === existing.id);
+      subs.forEach((sub: any) => {
+        dbData.notifications = dbData.notifications || [];
+        dbData.notifications.unshift({
+          id: `notif-price-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          email: sub.email,
+          subject: `📉 Price Update Alert: ${existing.title}`,
+          body: `Namaste!\n\nThe listing price of the property "${existing.title}" you subscribed to has been changed.\n\nPrevious Price: Rs. ${Number(originalPrice).toLocaleString('en-IN')}\nNew Listing Price: Rs. ${Number(newPrice).toLocaleString('en-IN')}\n\nVisit ApnaGhar to review updated listings details.`,
+          createdAt: new Date().toISOString()
+        });
+      });
     }
 
     const updated = {
       ...existing,
       ...req.body,
+      status: updatedStatus,
+      moderationNotes: updatedModerationNotes,
       auditHistory: updatedHistory,
+      versions: updatedVersions,
       id: existing.id, // Immutable
       updatedAt: new Date().toISOString()
     };
 
     dbData.properties[idx] = updated;
-    saveDB();
+    saveDBTracked('PROPERTY', 'UPDATE');
+    addDBLog('UPDATE', 'PROPERTY', 'SUCCESS', `Successfully updated property details and saved database for id: "${updated.id}" ("${updated.title}"). Final status: "${updated.status}".`);
     res.json(updated);
   });
 
-  app.post('/api/properties/bulk-moderation', (req, res) => {
+  // Price change alert subscriptions endpoints
+  app.post('/api/properties/:id/price-alerts', (req, res) => {
+    const propertyId = req.params.id;
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required to subscribe to price alerts.' });
+    }
+
+    dbData.priceAlerts = dbData.priceAlerts || [];
+    
+    // Check if subscription already exists
+    const exists = dbData.priceAlerts.some((pa: any) => pa.propertyId === propertyId && pa.email.toLowerCase() === email.toLowerCase());
+    if (exists) {
+      return res.status(200).json({ message: 'Already subscribed to price alerts.', subscribed: true });
+    }
+
+    const newAlert = {
+      id: `pa-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      propertyId,
+      email,
+      createdAt: new Date().toISOString()
+    };
+
+    dbData.priceAlerts.push(newAlert);
+    saveDB();
+    res.status(201).json({ message: 'Subscritped to price alerts successfully.', subscribed: true, data: newAlert });
+  });
+
+  app.get('/api/properties/:id/price-alerts', (req, res) => {
+    dbData.priceAlerts = dbData.priceAlerts || [];
+    const propertyId = req.params.id;
+    const list = dbData.priceAlerts.filter((pa: any) => pa.propertyId === propertyId);
+    res.json(list);
+  });
+
+  app.delete('/api/properties/:id/price-alerts', (req, res) => {
+    const propertyId = req.params.id;
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required to unsubscribe.' });
+    }
+
+    dbData.priceAlerts = dbData.priceAlerts || [];
+    const beforeCount = dbData.priceAlerts.length;
+    dbData.priceAlerts = dbData.priceAlerts.filter((pa: any) => !(pa.propertyId === propertyId && pa.email.toLowerCase() === (email as string).toLowerCase()));
+    
+    if (dbData.priceAlerts.length !== beforeCount) {
+      saveDB();
+      return res.json({ message: 'Unsubscribed successfully.', subscribed: false });
+    }
+    
+    res.json({ message: 'Subscription not found.', subscribed: false });
+  });
+
+  app.post('/api/properties/bulk-moderation', checkAdminAuth, (req, res) => {
     const { ids, status, moderationNotes, changedBy } = req.body;
     if (!ids || !Array.isArray(ids) || !status) {
       return res.status(400).json({ error: 'Property ids (array) and target status are required.' });
@@ -742,22 +1102,40 @@ async function startServer() {
           updatedHistory = [entry, ...updatedHistory];
         }
 
-        if (status === 'REJECTED') {
-          dbData.notifications.unshift({
-            id: `notif-${Date.now()}-${Math.random()}`,
-            email: 'broker-compliance@apnaghar.com',
-            subject: `❌ Bulk Rejection notification: ${existing.title}`,
-            body: `Hello,\n\nWe regret to inform you that your property listing "${existing.title}" was rejected during an administrative bulk action.\n\nReason: ${moderationNotes || 'Administrative bulk audit cleanup.'}\n\nCompliance Team`,
-            createdAt: new Date().toISOString()
-          });
-        } else if (status === 'APPROVED') {
-          dbData.notifications.unshift({
-            id: `notif-${Date.now()}-${Math.random()}`,
-            email: 'broker-compliance@apnaghar.com',
-            subject: `🎉 Bulk Approval notification: ${existing.title}`,
-            body: `Hello,\n\nWe are pleased to inform you that your property "${existing.title}" is approved and active.`,
-            createdAt: new Date().toISOString()
-          });
+        // Resolve owner email dynamically
+        let ownerEmail = 'owner@apnaghar.com';
+        if (existing.ownerId) {
+          if (existing.ownerId.includes('@')) {
+            ownerEmail = existing.ownerId;
+          } else {
+            const foundUser = (dbData.users || []).find((u: any) => u.id === existing.ownerId || u.name?.toLowerCase().includes(existing.ownerId.toLowerCase()));
+            if (foundUser && foundUser.email) {
+              ownerEmail = foundUser.email;
+            } else if (existing.ownerId === 'agent-demo' || existing.ownerId === 'agent-1') {
+              ownerEmail = 'rajesh@malhotraestates.com';
+            }
+          }
+        }
+
+        if (existing.status === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
+          dbData.notifications = dbData.notifications || [];
+          if (status === 'REJECTED') {
+            dbData.notifications.unshift({
+              id: `notif-${Date.now()}-${Math.random()}`,
+              email: ownerEmail,
+              subject: `❌ Property Validation Rejected: ${existing.title}`,
+              body: `Hello,\n\nWe regret to inform you that your property listing "${existing.title}" was not approved during our manual audit.\n\nReason for Rejection:\n${moderationNotes || 'Administrative bulk audit cleanup.'}\n\nPlease click on the ApnaGhar dashboard to correct your details.\n\nBest regards,\nApnaGhar Compliance Team`,
+              createdAt: new Date().toISOString()
+            });
+          } else if (status === 'APPROVED') {
+            dbData.notifications.unshift({
+              id: `notif-${Date.now()}-${Math.random()}`,
+              email: ownerEmail,
+              subject: `🎉 Property Listing Approved: ${existing.title}`,
+              body: `Greetings!\n\nYour property listing "${existing.title}" has been APPROVED and is now active on the ApnaGhar platform!\n\nBest regards,\nApnaGhar Compliance Team`,
+              createdAt: new Date().toISOString()
+            });
+          }
         }
 
         const updated = {
@@ -781,10 +1159,28 @@ async function startServer() {
   app.delete('/api/properties/:id', (req, res) => {
     const idx = dbData.properties.findIndex(p => p.id === req.params.id);
     if (idx === -1) {
+      addDBLog('DELETE', 'PROPERTY', 'ERROR', `Delete failed: Property ID "${req.params.id}" not found in database.`);
       return res.status(404).json({ error: 'Property not found' });
     }
+
+    const existing = dbData.properties[idx];
+
+    const userEmail = (req.headers['x-user-email'] || req.body.userEmail || '').toString().trim().toLowerCase();
+    const userRole = (req.headers['x-user-role'] || req.body.userRole || '').toString().trim().toUpperCase();
+
+    addDBLog('DELETE', 'PROPERTY', 'INFO', `Incoming request to delete property ID: "${existing.id}" ("${existing.title}"). Initiated by user: "${userEmail || 'GUEST'}" (Role: ${userRole || 'NONE'})`);
+
+    const isOwner = existing.ownerId?.toLowerCase() === userEmail || userEmail === 'owner-demo' || userEmail === 'agent-demo' || !userEmail;
+    const isAdmin = (userEmail.endsWith('@apnaghar.com') || userEmail === 'aniwas111@gmail.com') && userRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      addDBLog('DELETE', 'PROPERTY', 'ERROR', `Permission Denied: User "${userEmail}" (Role: "${userRole}") lacks authorized permissions to delete "${existing.title}".`);
+      return res.status(403).json({ error: 'Access Denied: You do not have permissions to delete this listing.' });
+    }
+
     dbData.properties.splice(idx, 1);
-    saveDB();
+    saveDBTracked('PROPERTY', 'DELETE');
+    addDBLog('DELETE', 'PROPERTY', 'SUCCESS', `Successfully removed property "${existing.title}" (ID: ${existing.id}) from database files.`);
     generateSitemapXML();
     res.json({ success: true });
   });
@@ -1252,17 +1648,165 @@ async function startServer() {
     res.status(201).json(newScreening);
   });
 
+  // --- PROMOTIONAL BANNERS & ADS API (Admin Managed) ---
+  app.get('/api/promos', (req, res) => {
+    if (!dbData.promos) {
+      dbData.promos = [];
+    }
+    const { activeOnly } = req.query;
+    let list = dbData.promos;
+    if (activeOnly === 'true') {
+      const now = new Date();
+      list = list.filter(p => {
+        if (!p.active) return false;
+        if (p.expiryDate) {
+          try {
+            const exp = new Date(p.expiryDate);
+            // If the expiryDate is a date-only string (e.g., YYYY-MM-DD), make it inclusive of the entire day
+            if (p.expiryDate.length === 10 && !p.expiryDate.includes('T')) {
+              exp.setUTCHours(23, 59, 59, 999);
+            } else {
+              exp.setHours(23, 59, 59, 999);
+            }
+            // If expiry check succeeds and is in the past, skip
+            if (exp.getTime() && exp < now) {
+              return false;
+            }
+          } catch (e) {
+            // ignore malformed dates for safety
+          }
+        }
+        return true;
+      });
+    }
+    res.json(list);
+  });
+
+  app.post('/api/promos', checkAdminAuth, (req, res) => {
+    const { title, description, type, imageUrl, badge, linkUrl, expiryDate, active } = req.body;
+    if (!title || !description || !type || !imageUrl) {
+      return res.status(400).json({ error: 'Title, description, type, and imageUrl are required.' });
+    }
+    
+    if (!dbData.promos) {
+      dbData.promos = [];
+    }
+
+    const newPromo: Promotion = {
+      id: `promo-${Date.now()}`,
+      title,
+      description,
+      type,
+      imageUrl,
+      badge: badge || '',
+      linkUrl: linkUrl || '#',
+      expiryDate: expiryDate || '',
+      active: active !== undefined ? !!active : true,
+      createdAt: new Date().toISOString()
+    };
+
+    dbData.promos.unshift(newPromo);
+    saveDB();
+    res.status(201).json(newPromo);
+  });
+
+  app.put('/api/promos/:id', checkAdminAuth, (req, res) => {
+    const { id } = req.params;
+    const { title, description, type, imageUrl, badge, linkUrl, expiryDate, active } = req.body;
+    
+    if (!dbData.promos) {
+      dbData.promos = [];
+    }
+
+    const promo = dbData.promos.find(p => p.id === id);
+    if (!promo) {
+      return res.status(404).json({ error: 'Promotion not found' });
+    }
+
+    if (title !== undefined) promo.title = title;
+    if (description !== undefined) promo.description = description;
+    if (type !== undefined) promo.type = type;
+    if (imageUrl !== undefined) promo.imageUrl = imageUrl;
+    if (badge !== undefined) promo.badge = badge;
+    if (linkUrl !== undefined) promo.linkUrl = linkUrl;
+    if (expiryDate !== undefined) promo.expiryDate = expiryDate;
+    if (active !== undefined) promo.active = !!active;
+
+    saveDB();
+    res.json(promo);
+  });
+
+  app.delete('/api/promos/:id', checkAdminAuth, (req, res) => {
+    const { id } = req.params;
+    if (!dbData.promos) {
+      dbData.promos = [];
+    }
+
+    const index = dbData.promos.findIndex(p => p.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Promotion not found' });
+    }
+
+    dbData.promos.splice(index, 1);
+    saveDB();
+    res.json({ success: true });
+  });
+
   // 6. User Directory & Role Management API (Admin Access)
-  app.get('/api/users', (req, res) => {
+  app.get('/api/logs/security', checkAdminAuth, (req, res) => {
+    res.json(dbData.securityLogs || []);
+  });
+
+  app.post('/api/logs/security', (req, res) => {
+    const { email, role, targetRole, message } = req.body;
+    const newLog = {
+      id: `sec-log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: new Date().toISOString(),
+      email: email || 'GUEST',
+      role: role || 'GUEST',
+      targetRole: targetRole || 'UNKNOWN',
+      message: message || 'Unauthorized access attempt detected.'
+    };
+    if (!dbData.securityLogs) {
+      dbData.securityLogs = [];
+    }
+    dbData.securityLogs.push(newLog);
+    saveDB();
+    console.warn(`[SECURITY WARNING] User ${newLog.email} (${newLog.role}) attempted unauthorized access to ${newLog.targetRole}. Message: ${newLog.message}`);
+    res.status(201).json({ success: true, log: newLog });
+  });
+
+  app.get('/api/users', checkAdminAuth, (req, res) => {
     res.json(dbData.users || []);
   });
 
   app.put('/api/users/:email/role', (req, res) => {
     const { email } = req.params;
-    const { role } = req.body;
+    const { role, adminEmail } = req.body;
     
     if (!role || !Object.values(UserRole).includes(role)) {
       return res.status(400).json({ error: 'Invalid user role specified.' });
+    }
+
+    // Server-side validation: enforce that only verified administrative credentials can assign roles
+    if (!adminEmail) {
+      return res.status(401).json({ error: 'Administrative session validation is required to perform role updates.' });
+    }
+    const normalizedAdminEmail = adminEmail.toLowerCase();
+    const actingAdmin = (dbData.users || []).find(u => u.email.toLowerCase() === normalizedAdminEmail);
+    const isActingAdminAuthorized = normalizedAdminEmail.endsWith('@apnaghar.com') || normalizedAdminEmail === 'aniwas111@gmail.com';
+    
+    if (!actingAdmin || actingAdmin.role !== UserRole.ADMIN || !isActingAdminAuthorized) {
+      return res.status(403).json({ error: 'Access Denied. Only domain-verified administrators are authorized to update roles.' });
+    }
+
+    // Double-protect administrative role promotion: target email must also belong to admin whitelist
+    if (role === UserRole.ADMIN) {
+      const normalizedTargetEmail = email.toLowerCase();
+      const isTargetAuthorized = normalizedTargetEmail.endsWith('@apnaghar.com') || normalizedTargetEmail === 'aniwas111@gmail.com';
+      if (!isTargetAuthorized) {
+        return res.status(403).json({ error: 'Security constraint violation: The target user address does not qualify for administrative status.' });
+      }
     }
 
     const user = (dbData.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -1274,6 +1818,24 @@ async function startServer() {
     saveDB();
 
     res.json({ message: `Successfully updated user ${email} to role '${role}'.`, user });
+  });
+
+  // Server-side session verification endpoint
+  app.post('/api/auth/verify', (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(401).json({ isValid: false, reason: 'Session validation requires an active identity email.' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const user = (dbData.users || []).find(u => u.email.toLowerCase() === normalizedEmail);
+    const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+
+    if (user && user.role === UserRole.ADMIN && isAdminAuthorized) {
+      return res.json({ isValid: true, token: `verified-admin-session-${normalizedEmail}` });
+    }
+
+    return res.status(403).json({ isValid: false, reason: 'Unauthorized admin credentials or mismatched security signature.' });
   });
 
   // Auth / Role Session Synchronization Endpoint
@@ -1289,7 +1851,15 @@ async function startServer() {
     let user = dbData.users.find(u => u.email.toLowerCase() === normalizedEmail);
 
     if (!user) {
-      const finalRole = normalizedEmail === 'aniwas111@gmail.com' ? UserRole.ADMIN : (role || UserRole.BUYER);
+      // Direct registration defense check to prevent unauthorized admin assignment
+      let finalRole = role || UserRole.BUYER;
+      const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+      if (finalRole === UserRole.ADMIN && !isAdminAuthorized) {
+        finalRole = UserRole.BUYER;
+      } else if (normalizedEmail === 'aniwas111@gmail.com' || normalizedEmail.endsWith('@apnaghar.com')) {
+        finalRole = UserRole.ADMIN;
+      }
+
       user = {
         id: normalizedEmail,
         name: name || email.split('@')[0],
@@ -1299,6 +1869,13 @@ async function startServer() {
       dbData.users.push(user);
       saveDB();
     } else {
+      // Existing user role synchronization security checks
+      const isAdminAuthorized = normalizedEmail.endsWith('@apnaghar.com') || normalizedEmail === 'aniwas111@gmail.com';
+      if (user.role === UserRole.ADMIN && !isAdminAuthorized) {
+        user.role = UserRole.BUYER;
+        saveDB();
+      }
+
       if (name && !user.name) {
         user.name = name;
         saveDB();

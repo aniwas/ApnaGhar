@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Users, Sparkles, Building, Briefcase, Key, Eye, HelpCircle, Bell, Globe, Sun, Moon, Heart } from 'lucide-react';
-import { UserRole } from '../types';
+import { UserRole, Property } from '../types';
 import { useTranslation } from '../context/TranslationContext';
+import { safeStorage } from '../services/safeStorage';
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -11,6 +12,13 @@ interface NavbarProps {
   onLogout?: () => void;
   onOpenAuth?: () => void;
   favoritesCount?: number;
+  properties?: Property[];
+  favorites?: string[];
+  onSelectProperty?: (property: Property) => void;
+  onFavoriteToggle?: (id: string) => void;
+  notifications?: any[];
+  onOpenFavorites?: () => void;
+  onOpenNotifications?: () => void;
 }
 
 export default function Navbar({ 
@@ -20,18 +28,25 @@ export default function Navbar({
   currentUser,
   onLogout,
   onOpenAuth,
-  favoritesCount = 0
+  favoritesCount = 0,
+  properties = [],
+  favorites = [],
+  onSelectProperty,
+  onFavoriteToggle,
+  notifications = [],
+  onOpenFavorites,
+  onOpenNotifications
 }: NavbarProps) {
   const [showRoleSelectorMenu, setShowRoleSelectorMenu] = useState<boolean>(false);
   const [showLangMenu, setShowLangMenu] = useState<boolean>(false);
+  const [showFavoritesMenu, setShowFavoritesMenu] = useState<boolean>(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState<boolean>(false);
   const { locale, setLocale, t } = useTranslation();
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
-      }
+    const saved = safeStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
     }
     return 'dark'; // default theme is dark glassmorphic
   });
@@ -43,7 +58,7 @@ export default function Navbar({
     } else {
       root.classList.remove('light');
     }
-    localStorage.setItem('theme', theme);
+    safeStorage.setItem('theme', theme);
   }, [theme]);
 
   const rolesList = [
@@ -160,23 +175,183 @@ export default function Navbar({
             </button>
 
             {/* Elegant Favorites Indicator/Badge */}
-            <div className="relative group p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-white/5 text-slate-300 hover:text-white transition-all select-none active:scale-95" title="My Saved Shortcuts / Favorites">
-              <Heart className="h-4.5 w-4.5 text-pink-500 fill-pink-500/25 group-hover:fill-pink-500 transition-all duration-300" />
-              {favoritesCount > 0 ? (
-                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-pink-500 text-[8px] font-black font-mono text-white flex items-center justify-center border border-slate-900 shadow-md transform scale-110 animate-bounce">
-                  {favoritesCount}
-                </span>
-              ) : (
-                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-slate-800 text-[8px] font-mono text-slate-400 flex items-center justify-center border border-slate-900">
-                  0
-                </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenFavorites) {
+                    onOpenFavorites();
+                  } else {
+                    setShowFavoritesMenu(!showFavoritesMenu);
+                    setShowNotificationsMenu(false);
+                  }
+                  setShowLangMenu(false);
+                  setShowRoleSelectorMenu(false);
+                }}
+                className="relative group p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-white/5 text-slate-300 hover:text-white transition-all select-none active:scale-95 flex items-center justify-center outline-none"
+                title="My Saved Shortcuts / Favorites"
+              >
+                <Heart className={`h-4.5 w-4.5 text-pink-500 transition-all duration-300 ${favorites.length > 0 ? 'fill-pink-500' : 'fill-pink-500/25 group-hover:fill-pink-500'}`} />
+                {favorites.length > 0 ? (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-pink-500 text-[8px] font-black font-mono text-white flex items-center justify-center border border-slate-900 shadow-md transform scale-110 animate-bounce">
+                    {favorites.length}
+                  </span>
+                ) : (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-slate-800/80 text-[8px] font-mono text-slate-400 flex items-center justify-center border border-slate-900">
+                    0
+                  </span>
+                )}
+              </button>
+
+              {showFavoritesMenu && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 backdrop-blur-2xl bg-slate-900/95 rounded-2xl border border-white/15 p-3.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-2">
+                    <span className="text-xs font-mono tracking-wider text-slate-400 font-bold uppercase">
+                      My Favorites ({properties.filter(p => favorites.includes(p.id)).length})
+                    </span>
+                    <span className="text-[10px] text-pink-400 font-bold font-sans">♥ Saved Listings</span>
+                  </div>
+                  
+                  {properties.filter(p => favorites.includes(p.id)).length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 text-xs flex flex-col items-center gap-3">
+                      <div className="p-2.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-500/60">
+                        <Heart className="h-5 w-5 animate-pulse" />
+                      </div>
+                      <span className="italic leading-snug">Your favorites tray is empty. Tap the heart icons on property cards to instantly save them!</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowFavoritesMenu(false);
+                          if (onOpenFavorites) onOpenFavorites();
+                        }}
+                        className="mt-1 px-3 py-1 bg-pink-500/15 text-pink-400 hover:bg-pink-500/25 border border-pink-500/30 text-[10px] font-mono tracking-wider font-extrabold uppercase rounded-lg transition-all cursor-pointer"
+                      >
+                        Manage favorites board
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                      {properties.filter(p => favorites.includes(p.id)).map((p) => {
+                        const formattedPrice = new Intl.NumberFormat('en-IN', {
+                          style: 'currency',
+                          currency: 'INR',
+                          maximumFractionDigits: 0
+                        }).format(p.price);
+
+                        return (
+                          <div key={p.id} className="p-2 bg-slate-950/40 hover:bg-white/5 rounded-xl border border-white/5 flex items-center justify-between gap-3 text-left transition-all">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80'} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-800 shrink-0" referrerPolicy="no-referrer" />
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-bold text-white truncate leading-tight">{p.title || 'Property'}</h4>
+                                <p className="text-[9px] text-slate-400 truncate mt-0.5">{p.location?.area || ''}, {p.location?.city || ''}</p>
+                                <span className="text-[10px] text-pink-400 font-extrabold">{formattedPrice}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {onSelectProperty && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onSelectProperty(p);
+                                    setShowFavoritesMenu(false);
+                                  }}
+                                  className="text-[9px] font-mono bg-blue-600 hover:bg-blue-750 text-white px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer"
+                                >
+                                  View
+                                </button>
+                              )}
+                              {onFavoriteToggle && (
+                                <button
+                                  type="button"
+                                  onClick={() => onFavoriteToggle(p.id)}
+                                  className="text-slate-400 hover:text-pink-500 p-1 hover:bg-white/5 rounded-lg transition-all cursor-pointer"
+                                  title="Remove from favorites"
+                                >
+                                  <Heart className="h-3.5 w-3.5 text-pink-500 fill-pink-500" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
             {/* Animated Notifications Bell */}
-            <div className="relative group p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-white/5 text-slate-300 hover:text-white transition-all">
-              <Bell className="h-4.5 w-4.5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-blue-500 rounded-full"></span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenNotifications) {
+                    onOpenNotifications();
+                  } else {
+                    setShowNotificationsMenu(!showNotificationsMenu);
+                    setShowFavoritesMenu(false);
+                  }
+                  setShowLangMenu(false);
+                  setShowRoleSelectorMenu(false);
+                }}
+                className="relative group p-1.5 rounded-full bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-white/5 text-slate-300 hover:text-white transition-all outline-none flex items-center justify-center active:scale-95"
+                title="System Notifications"
+              >
+                <Bell className="h-4.5 w-4.5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-blue-500 rounded-full animate-ping"></span>
+                )}
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-blue-500 rounded-full"></span>
+                )}
+              </button>
+
+              {showNotificationsMenu && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 backdrop-blur-2xl bg-slate-900/95 rounded-2xl border border-white/15 p-3.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-2">
+                    <span className="text-xs font-mono tracking-wider text-slate-400 font-bold uppercase">
+                      Recent System Alerts ({notifications.length})
+                    </span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                  </div>
+                  
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 text-xs flex flex-col items-center gap-3">
+                      <div className="p-2.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400/60">
+                        <Bell className="h-5 w-5 animate-bounce" />
+                      </div>
+                      <span className="italic leading-snug">There are no recent system notifications or matches.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNotificationsMenu(false);
+                          if (onOpenNotifications) onOpenNotifications();
+                        }}
+                        className="mt-1 px-3 py-1 bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 text-[10px] font-mono tracking-wider font-extrabold uppercase rounded-lg transition-all cursor-pointer"
+                      >
+                        Launch Alert Manager
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                      {notifications.map((n) => (
+                        <div key={n.id || Math.random().toString()} className="p-2.5 bg-slate-950/40 rounded-xl border border-white/5 relative overflow-hidden text-left pl-3.5">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span className="font-extrabold text-[9px] text-blue-400 uppercase tracking-wider font-mono">Alert System</span>
+                            <span className="text-[8px] font-mono text-white/40">
+                              {n.createdAt ? new Date(n.createdAt).toLocaleTimeString() : 'Recent'}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-[11px] text-white/95 leading-tight">{n.title || 'Notification'}</h4>
+                          <p className="text-[10px] text-white/60 font-sans mt-1 leading-snug">{n.message || n.subject}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Registration System Controls */}
@@ -232,7 +407,7 @@ export default function Navbar({
                     <span className="text-[10px] font-mono tracking-wider text-slate-400 font-bold uppercase">
                       {t('switch_workspace')}
                     </span>
-                    {currentUser && currentUser.role !== UserRole.ADMIN ? (
+                    {(!currentUser || currentUser.role !== UserRole.ADMIN) ? (
                       <p className="text-[9px] text-amber-500 mt-1 font-bold">🔒 {t('roles_managed_admin')}</p>
                     ) : (
                       <p className="text-[10px] text-slate-400 mt-0.5">{t('explore_perspectives')}</p>
@@ -243,7 +418,7 @@ export default function Navbar({
                     {rolesList.map((roleOpt) => {
                       const Icon = roleOpt.icon;
                       const isSelected = roleOpt.value === currentRole;
-                      const isLocked = currentUser && currentUser.role !== UserRole.ADMIN && roleOpt.value !== currentRole;
+                      const isLocked = !currentUser ? (roleOpt.value !== UserRole.GUEST) : (currentUser.role !== UserRole.ADMIN && roleOpt.value !== currentUser.role);
 
                       return (
                         <button

@@ -17,7 +17,7 @@ export default function SocialShare({ property }: SocialShareProps) {
     : `https://apnaghar.com/property/${property.id}`;
     
   const shareTitle = `Premium Property on ApnaGhar: ${property.title}`;
-  const shareText = `Check out this beautiful ${property.type} located in ${property.location.area}, ${property.location.city} on ApnaGhar. Price: ₹ ${(property.price / 100000).toFixed(1)} Lakhs.`;
+  const shareText = `Check out this beautiful ${property.type || 'Property'} located in ${property.location?.area || ''}, ${property.location?.city || ''} on ApnaGhar. Price: ₹ ${((property.price || 0) / 100000).toFixed(1)} Lakhs.`;
 
   const trackSocialShare = async () => {
     try {
@@ -46,9 +46,35 @@ export default function SocialShare({ property }: SocialShareProps) {
 
   const handleCopyLink = () => {
     trackSocialShare();
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    
+    const copyText = (text: string): Promise<void> => {
+      if (navigator.clipboard?.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (successful) return Promise.resolve();
+        return Promise.reject(new Error('Copy failed'));
+      } catch (e: any) {
+        return Promise.reject(e);
+      }
+    };
+
+    copyText(shareUrl)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((err) => {
+        console.error("Clipboard copy failed in SocialShare:", err);
+      });
   };
 
   const shareLinks = {
